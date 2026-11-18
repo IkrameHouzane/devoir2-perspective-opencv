@@ -1,12 +1,10 @@
 # Devoir 2 (Code) : Redressement d'une page par transformation de perspective
 
-**Auteur :** Ikrame Houzane, FST Tanger (LSI)
-**Professeur :** M'hamed AIT KBIR
 **Langage / bibliothèque :** C++ avec OpenCV (développé sous Code::Blocks)
 
 ## Objectif
 
-À partir de la photo d'une page posée sur un fond, le programme (`dovoir2.cpp`) :
+À partir de la photo d'une page posée sur un fond, le programme (`devoir2.cpp`) :
 
 1. détecte automatiquement les 4 coins du document ;
 2. affiche le résultat de cette détection ;
