@@ -106,13 +106,13 @@ La touche `m` permet de corriger ce choix manuellement.
 
 | `receipt.jpg` | `desk.JPG` | `cell_pic.jpg` |
 |---|---|---|
-| <img src="detection_receipt.jpg" width="250"> | <img src="detection_desk.JPG" width="250"> | <img src="detection_cell_pic.jpg" width="250"> |
+| <img src="receipt.jpg" width="250"> | <img src="desk.JPG" width="250"> | <img src="cell_pic.jpg" width="250"> |
 
 ### Masques binaires
 
 | `receipt.jpg` | `desk.JPG` | `cell_pic.jpg` |
 |---|---|---|
-| <img src="masque_receipt.jpg" width="250"> | <img src="masque_desk.JPG" width="250"> | <img src="masque_cell_pic.jpg" width="250"> |
+| <img src="mask image1.png" width="250"> | <img src="mask image2.png" width="250"> | <img src="mask3.png" width="250"> |
 
 ### Images redressées (vue de dessus)
 
