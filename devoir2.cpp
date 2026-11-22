@@ -1,15 +1,21 @@
 /*
  Justification des methodes :
 
- - Fond simple (receipt.jpg, cell_pic.jpg) : la page est nettement plus claire que le fond.
-   Le seuillage d'Otsu sur la luminosite separe les deux sans parametre a regler.
+ - Fond simple ou texture sombre tres contraste (receipt.jpg, cell_pic.jpg) :
+   la page est nettement plus claire que le fond (cell_pic.jpg a une texture de bois,
+   mais sa luminosite est tres basse). L'histogramme reste bimodal : le seuillage
+   d'Otsu sur la luminosite separe page et fond sans parametre a regler.
 
  - Fond texture et clair (desk.JPG) : le bois clair a une luminosite proche de celle du papier,
    donc Otsu seul deborde sur le fond. On ajoute un seuillage d'Otsu sur la saturation (HSV) :
    le papier est blanc (peu sature) alors que le bois est colore. Les deux masques sont combines (ET logique).
 
  - Choix automatique : on teste la methode simple, et si son masque touche trop les bords de l'image
-   (plus de 10 %), on bascule sur la methode texturee.
+   (plus de 10 %), on bascule sur la methode texturee. Seuil choisi d'apres les mesures
+   sur les 3 images (0 / 0.006 / 0.239).
+
+ - Limites : la methode texturee suppose un papier blanc et un fond colore. Dans les autres cas,
+   l'ajustement manuel (souris, touche 'm') permet de corriger.
 */
 
 #include <opencv2/opencv.hpp>
@@ -54,7 +60,7 @@ static bool isTextured(const Mat& img) {
           + countNonZero(m.col(0)) + countNonZero(m.col(m.cols - 1));
     double frac = n / (2.0 * (m.cols + m.rows));  // part du cadre de l'image couverte par le masque
     cout << "Debordement du masque sur les bords : " << frac << endl;
-    return frac > 0.10;                           // seuil a verifier avec les 3 images
+    return frac > 0.10;                           // seuil choisi d'apres les mesures : 0 / 0.006 / 0.239
 }
 
 // ---------------------------------------------------------------
@@ -183,7 +189,7 @@ int process(const string& path) {
     while (true) {
         int key = waitKey(20);
         if (key == 27) return -1;                                 // Esc : on quitte tout
-        if (key == 13 || key == 32) break;                        // Entree / Espace : valider
+        if (key == 13 || key == 10 || key == 32) break;           // Entree (Windows/Linux) / Espace : valider
         if (key == 'r' || key == 'm') {                           // reset ou changement de methode
             if (key == 'm') textured = !textured;
             st.pts = detectCorners(st.base, textured, mask);
@@ -191,6 +197,22 @@ int process(const string& path) {
             imshow("Masque", mask);
             draw(st);
         }
+    }
+
+    // Sauvegarde des captures de la detection / ajustement (pour le rapport)
+    size_t pos = path.find_last_of("/\\");
+    string name = (pos == string::npos) ? path : path.substr(pos + 1);
+    {
+        Mat cap = st.base.clone();
+        vector<Point> poly;
+        for (size_t i = 0; i < st.pts.size(); i++) poly.push_back(Point(st.pts[i]));
+        polylines(cap, poly, true, Scalar(0, 255, 0), 2);
+        for (int i = 0; i < 4; i++) {
+            circle(cap, poly[i], 8, Scalar(0, 0, 255), FILLED);
+            putText(cap, to_string(i + 1), poly[i] + Point(10, -10), FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
+        }
+        imwrite("detection_" + name, cap);
+        imwrite("masque_" + name, mask);
     }
 
     // 4) Transformation de perspective sur l'image d'origine
@@ -206,8 +228,6 @@ int process(const string& path) {
     warpPerspective(orig, out, M, Size(cvRound(w), cvRound(h)), INTER_CUBIC);
 
     // Un fichier resultat par image
-    size_t pos = path.find_last_of("/\\");
-    string name = (pos == string::npos) ? path : path.substr(pos + 1);
     imwrite("resultat_" + name, out);
 
     Mat shown;
