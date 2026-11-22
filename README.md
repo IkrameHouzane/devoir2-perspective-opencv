@@ -21,8 +21,8 @@ sur Google Classroom, sans aucune modification :
 | Image | Contenu | Type de fond |
 |---|---|---|
 | `receipt.jpg` | ticket de caisse sur fond sombre uniforme | simple |
-| `desk.JPG` | page sur un bureau en bois clair | texturé |
-| `cell_pic.jpg` | page sur une table en bois sombre | texturé |
+| `desk.JPG` | page sur un bureau en bois clair | texturé clair |
+| `cell_pic.jpg` | page sur une table en bois sombre | texturé mais très contrasté (traité comme simple) |
 
 Par défaut, le programme traite ces 3 images dans cet ordre. D'autres images
 peuvent être données en arguments de la ligne de commande.
@@ -42,18 +42,23 @@ Avec d'autres images : `programme.exe chemin/image1.jpg chemin/image2.jpg`
 | Glisser un point à la souris | ajuster un coin |
 | `Entrée` ou `Espace` | valider et appliquer la transformation |
 | `m` | changer de méthode (simple / texturée) |
-| `r` | relancer la détection automatique |
-| `Échap` | quitter |
+| `r` | relancer la détection avec la méthode courante |
+| `Échap` | quitter (pendant l'ajustement) |
 
-Le résultat de chaque image est enregistré sous `resultat_<nom de l'image>`.
+Pour chaque image, le programme enregistre :
+`detection_<nom>` (coins ajustés), `masque_<nom>` (masque binaire) et `resultat_<nom>` (image redressée).
 
 ## Méthodes et justification
 
-### Fond simple (`receipt.jpg`, `cell_pic.jpg`)
+### Fond simple ou texturé très contrasté (`receipt.jpg`, `cell_pic.jpg`)
 
 La page est nettement plus claire que le fond, donc l'histogramme de luminosité
 est bimodal. Le **seuillage d'Otsu** sur l'image en niveaux de gris sépare la
 page du fond sans paramètre à régler. La méthode est simple et rapide.
+
+Pour `cell_pic.jpg`, le bois est texturé mais sa luminosité est bien plus basse
+que celle du papier : l'histogramme reste bimodal et Otsu suffit, la saturation
+n'est pas nécessaire.
 
 ### Fond texturé clair (`desk.JPG`)
 
@@ -67,7 +72,7 @@ sont combinés par un ET logique.
 1. Flou gaussien (réduit le bruit et la texture)
 2. Ouverture puis fermeture morphologique (supprime le bruit, comble le texte de la page)
 3. Plus grand contour extérieur, puis enveloppe convexe
-4. `approxPolyDP` pour obtenir 4 sommets (`minAreaRect` en secours)
+4. `approxPolyDP` avec tolérance croissante pour obtenir 4 sommets (`minAreaRect` en secours)
 5. Ordre des coins : haut-gauche, haut-droite, bas-droite, bas-gauche
 6. `getPerspectiveTransform` et `warpPerspective` sur l'image d'origine en pleine résolution
 
@@ -75,7 +80,8 @@ sont combinés par un ET logique.
 
 Le programme essaie d'abord la méthode simple. Si son masque touche plus de 10 %
 du cadre de l'image, le fond ressemble à la page et la méthode simple a échoué :
-il bascule alors sur la méthode texturée.
+il bascule alors sur la méthode texturée. Le seuil de 10 % a été choisi d'après
+les mesures ci-dessous, qui laissent une large marge.
 
 | Image | Débordement du masque | Méthode choisie |
 |---|---|---|
@@ -85,9 +91,30 @@ il bascule alors sur la méthode texturée.
 
 La touche `m` permet de corriger ce choix manuellement.
 
+## Limites
+
+- La méthode texturée suppose un papier blanc (peu saturé) et un fond coloré.
+  Elle échoue sur un fond gris/blanc texturé ou un papier coloré.
+- Le tri des coins (somme/différence) est fiable pour une page peu inclinée,
+  moins pour une rotation proche de 45°.
+- Dans ces cas, l'ajustement manuel (souris, touche `m`) permet de corriger.
+- Pistes d'amélioration : Canny + Hough (intersection des 4 bords) ou GrabCut.
+
 ## Résultats
 
-Images redressées (vue de dessus), à la racine du dépôt :
+### Détection automatique (avant ajustement manuel)
+
+| `receipt.jpg` | `desk.JPG` | `cell_pic.jpg` |
+|---|---|---|
+| <img src="detection_receipt.jpg" width="250"> | <img src="detection_desk.JPG" width="250"> | <img src="detection_cell_pic.jpg" width="250"> |
+
+### Masques binaires
+
+| `receipt.jpg` | `desk.JPG` | `cell_pic.jpg` |
+|---|---|---|
+| <img src="masque_receipt.jpg" width="250"> | <img src="masque_desk.JPG" width="250"> | <img src="masque_cell_pic.jpg" width="250"> |
+
+### Images redressées (vue de dessus)
 
 | `resultat_receipt.jpg` | `resultat_desk.JPG` | `resultat_cell_pic.jpg` |
 |---|---|---|
